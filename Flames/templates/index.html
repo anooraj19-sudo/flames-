@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLAMEOSS v1.0</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c20 0%, #1a103c 50%, #2b0840 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --primary: #ff3b6b;
+            --primary-glow: rgba(255, 59, 107, 0.4);
+            --accent: #9d4edd;
+            --text-main: #ffffff;
+            --text-sub: #a0a5c0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            padding-bottom: 80px; /* Leave room for bottom footer */
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .sound-toggle:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            filter: blur(150px);
+            opacity: 0.25;
+            top: 20%;
+            left: 20%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            filter: blur(150px);
+            opacity: 0.25;
+            bottom: 20%;
+            right: 20%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+	    margin-bottom: 24px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff3b6b, #c77dff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-field::placeholder { color: #6c7293; }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px var(--primary-glow);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 59, 107, 0.6);
+        }
+
+        .btn-future {
+            background: linear-gradient(45deg, #9d4edd, #c77dff);
+            box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
+            margin-top: 15px;
+        }
+
+        .btn-future:hover {
+            box-shadow: 0 12px 30px rgba(199, 125, 255, 0.6);
+        }
+
+        .loading-box {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+        }
+
+        .loading-text {
+            font-size: 0.95rem;
+            color: #c77dff;
+            margin-bottom: 12px;
+            min-height: 24px;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 1.2s infinite ease-in-out;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .result-box {
+            display: none;
+            margin-top: 25px;
+            padding: 24px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .verdict-emoji {
+            font-size: 3.5rem;
+            margin-bottom: 8px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .verdict-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .verdict-message {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .future-box {
+            display: none;
+            margin-top: 15px;
+            padding: 20px 16px;
+            background: rgba(157, 78, 221, 0.08);
+            border: 1px dashed var(--accent);
+            border-radius: 16px;
+            text-align: left;
+            animation: popIn 0.4s ease forwards;
+        }
+
+        .future-box h3 {
+            text-align: center;
+            color: #c77dff;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .future-box p {
+            margin: 6px 0;
+            font-size: 0.9rem;
+            color: #e2e4f0;
+        }
+
+        /* Footer styling */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 12, 32, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid var(--glass-border);
+            padding: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            z-index: 10;
+        }
+
+        footer span {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.4; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+<button class="sound-toggle" id="sound-btn" onclick="toggleSound()">🔊</button>
+
+<div class="card">
+    <h1>FLAMEOSS</h1>
+    <p class="subtitle">Relationship calculations certified by absolutely nobody.</p>
+
+    <div class="input-group">
+        <input type="text" id="name1" class="input-field" placeholder="💖 First Soul" autocomplete="off">
+        <input type="text" id="name2" class="input-field" placeholder="💖 Second Soul" autocomplete="off">
+    </div>
+
+    <button class="btn-submit" onclick="startConsultation()">Consult Destiny</button>
+	<p class="subtitle">Warning: Running this may crash your high hopes.</p>
+    <div id="loading" class="loading-box">
+        <div id="loading-text" class="loading-text">🔮 Initializing Destiny Engine...</div>
+        <div class="dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
+    <div id="result" class="result-box">
+        <span id="verdict-emoji" class="verdict-emoji"></span>
+        <div id="verdict-title" class="verdict-title"></div>
+        <p id="verdict-message" class="verdict-message"></p>
+        
+        <button id="future-btn" class="btn-submit btn-future" style="display: none;" onclick="revealFuture()">🔮 Peek into the Future?</button>
+        <div id="future-result" class="future-box"></div>
+    </div>
+	
+    
+</div>
+<div>
+	<p class="subtitle">Hope your life has fewer bugs than this program .</p>
+</div>
+
+<footer>	
+    Made by <span>Kevin</span> | <span>Greeshma</span> | <span>Abhinu</span>
+</footer>
+
+<script>
+/* -------------------------------------------------------------
+   1. WEB AUDIO SYNTHESIZER
+------------------------------------------------------------- */
+let audioCtx = null;
+let soundEnabled = true;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇';
+}
+
+function playClickSound() {
+    if (!soundEnabled) return;
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.08);
+}
+
+function playMagicStepSound() {
+    if (!soundEnabled) return;
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+    
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+}
+
+function playFanfareSound() {
+    if (!soundEnabled) return;
+    initAudio();
+    const notes = [392.00, 523.25, 659.25];
+    notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const startTime = audioCtx.currentTime + (idx * 0.12);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.2, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.4);
+    });
+}
+
+/* -------------------------------------------------------------
+   2. CANVAS PARTICLE ENGINE
+------------------------------------------------------------- */
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 1;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        this.opacity = Math.random() * 0.5 + 0.2;
+        this.color = Math.random() > 0.5 ? '#ff3b6b' : '#c77dff';
+    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+            this.reset();
+        }
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.fill();
+    }
+}
+
+for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+/* -------------------------------------------------------------
+   3. APP STATE & FLASK API FETCH
+------------------------------------------------------------- */
+const LOADING_STEPS = [
+    "🔮 Initializing Destiny Engine...",
+    "✨ Reading emotional frequencies...",
+    "🌌 Consulting ancient playground algorithms...",
+    "💞 Removing common letters...",
+    "🎲 Rolling fate..."
+];
+
+let cachedFutureData = null;
+let currentFirstName = "";
+let currentSecondName = "";
+
+async function startConsultation() {
+    playClickSound();
+
+    const name1 = document.getElementById('name1').value.trim();
+    const name2 = document.getElementById('name2').value.trim();
+
+    if (!name1 || !name2) {
+        alert("Please enter both names to consult fate!");
+        return;
+    }
+
+    const resultBox = document.getElementById('result');
+    const loadingBox = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const futureBtn = document.getElementById('future-btn');
+    const futureResult = document.getElementById('future-result');
+
+    // Reset UI
+    resultBox.style.display = 'none';
+    futureBtn.style.display = 'none';
+    futureResult.style.display = 'none';
+    loadingBox.style.display = 'block';
+
+    // Simulated terminal steps
+    for (let step of LOADING_STEPS) {
+        loadingText.innerText = step;
+        playMagicStepSound();
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Call Flask API
+    try {
+        const response = await fetch('/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name1, name2 })
+        });
+
+        const data = await response.json();
+        loadingBox.style.display = 'none';
+
+        if (response.ok) {
+            document.getElementById('verdict-emoji').innerText = data.result.emoji;
+            document.getElementById('verdict-title').innerText = data.result.title;
+            document.getElementById('verdict-message').innerText = data.result.message;
+
+            cachedFutureData = data.future;
+            currentFirstName = data.name1;
+            currentSecondName = data.name2;
+
+            resultBox.style.display = 'block';
+            playFanfareSound();
+
+            if (data.future) {
+                futureBtn.style.display = 'block';
+            }
+        } else {
+            alert(data.error || "An error occurred.");
+        }
+    } catch (err) {
+        loadingBox.style.display = 'none';
+        alert("Server connection failed.");
+    }
+}
+
+function revealFuture() {
+    playClickSound();
+    const futureResult = document.getElementById('future-result');
+    if (!cachedFutureData) return;
+
+    const f = cachedFutureData;
+    let html = "";
+
+    if (f.type === "MARRIAGE") {
+        html = `
+            <h3>💍 WEDDING INVITATION</h3>
+            <p style="text-align:center; margin-bottom:10px;"><b>${currentFirstName} & ${currentSecondName}</b><br>request your presence at their fictional wedding.</p>
+            <p>📍 <b>Venue:</b> ${f.venue}</p>
+            <p>👶 <b>Children:</b> ${f.children}</p>
+            <p>🐶 <b>Pet:</b> ${f.pet}</p>
+            <p>💰 <b>Wealth:</b> ${f.wealth}</p>
+            <p>💔 <b>Divorce Chance:</b> ${f.divorce_chance}</p>
+            <p>❤️ <b>Years Together:</b> ${f.years_together}</p>
+        `;
+    } else if (f.type === "LOVERS") {
+        html = `
+            <h3>❤️ FUTURE RELATIONSHIP SCAN</h3>
+            <p>🍕 <b>First Date:</b> ${f.first_date}</p>
+            <p>📱 <b>Who texts first:</b> ${f.texts_first}</p>
+            <p>😂 <b>Shared Braincell:</b> ${f.shared_braincell}</p>
+            <p>💋 <b>First Kiss:</b> ${f.first_kiss_days} days</p>
+        `;
+    } else if (f.type === "FRIEND ZONE") {
+        html = `
+            <h3>🤝 FRIENDSHIP REPORT</h3>
+            <p>🍟 <b>Who buys food:</b> ${f.buys_food}</p>
+            <p>🎮 <b>Friendship Duration:</b> ${f.duration_years} years</p>
+            <p>😂 <b>Inside Jokes:</b> ${f.inside_jokes}</p>
+        `;
+    } else if (f.type === "ATTRACTION") {
+        html = `
+            <h3>💘 CRUSH ANALYSIS</h3>
+            <p>👀 <b>Who falls first:</b> ${f.falls_first}</p>
+            <p>📱 <b>Confession Success:</b> ${f.confession_success}</p>
+        `;
+    } else if (f.type === "ENEMIES") {
+        html = `
+            <h3>⚔️ RIVAL ANALYSIS</h3>
+            <p>🥊 <b>Rival Type:</b> ${f.rival_type}</p>
+            <p>🏆 <b>Final Winner:</b> ${f.final_winner}</p>
+        `;
+    } else if (f.type === "ONE NIGHT STAND") {
+        html = `
+            <h3>🌙 AFTERMATH REPORT</h3>
+            <p>📞 <b>Calls Next Day:</b> ${f.calls_next_day}</p>
+            <p>😂 <b>Awkwardness Level:</b> ${f.awkwardness_level}</p>
+        `;
+    } else if (f.type === "STRANGERS") {
+        html = `
+            <h3>🚶 PARALLEL UNIVERSE REPORT</h3>
+            <p><b>Chance of Meeting Again:</b> ${f.remeet_chance}</p>
+            <p><b>Most Likely Place:</b> ${f.likely_place}</p>
+        `;
+    } else if (f.type === "SINGLE") {
+        html = `
+            <h3>😌 SINGLE LIFE REPORT</h3>
+            <p>🍕 <b>Friday Night:</b> ${f.friday_night}</p>
+            <p>❤️ <b>Future Relationship:</b> ${f.future_status}</p>
+        `;
+    }
+
+    futureResult.innerHTML = html;
+    futureResult.style.display = 'block';
+}
+</script>
+
+</body>
+</html>
