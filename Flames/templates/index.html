@@ -189,6 +189,62 @@
             box-shadow: 0 12px 30px rgba(199, 125, 255, 0.6);
         }
 
+        /* Future Video Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 6, 20, 0.85);
+            backdrop-filter: blur(6px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: linear-gradient(160deg, #1a103c, #2b0840);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-box video {
+            width: 100%;
+            border-radius: 12px;
+            margin: 10px 0 18px;
+            display: block;
+            background: #000;
+        }
+
         .loading-box {
             display: none;
             margin-top: 25px;
@@ -355,6 +411,17 @@
     </div>
 	
     
+</div>
+
+<div id="future-modal" class="modal-overlay">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeFutureModal()">&times;</button>
+        <video id="future-video" controls playsinline>
+            <source src="{{ url_for('static', filename='videos/peek-into-the-future.mp4') }}" type="video/mp4">
+            Your browser doesn't support embedded video.
+        </video>
+        <button class="btn-submit btn-future" onclick="closeFutureModalAndReveal()">🔮 yes proceed !</button>
+    </div>
 </div>
 <div>
 	<p class="subtitle">Hope your life has fewer bugs than this program .</p>
@@ -574,6 +641,27 @@ async function startConsultation() {
 
 function revealFuture() {
     playClickSound();
+    const modal = document.getElementById('future-modal');
+    const video = document.getElementById('future-video');
+    modal.classList.add('active');
+    video.currentTime = 0;
+    video.play().catch(() => {}); // autoplay may be blocked until user interacts, that's fine
+}
+
+function closeFutureModal() {
+    playClickSound();
+    const modal = document.getElementById('future-modal');
+    const video = document.getElementById('future-video');
+    video.pause();
+    modal.classList.remove('active');
+}
+
+function closeFutureModalAndReveal() {
+    closeFutureModal();
+    renderFutureContent();
+}
+
+function renderFutureContent() {
     const futureResult = document.getElementById('future-result');
     if (!cachedFutureData) return;
 
